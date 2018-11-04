@@ -4,3 +4,4 @@ app/static/js/vue.js
 *.css
 __pycache__
 *.sqlite
+node_modules
