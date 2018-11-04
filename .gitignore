@@ -1,0 +1,6 @@
+.DS_Store
+app/static/js/axios.min.js
+app/static/js/vue.js
+*.css
+__pycache__
+*.sqlite

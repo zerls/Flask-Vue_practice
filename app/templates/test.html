@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>test</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+
+
+</head>
+
+<body class="docs">
+    <div id="header">
+    </div>
+    <div id="main" class="fix-sidebar">
+        <div class="app" id="app">
+            <h1 align="center">Hello, {% if name %}{{ name }}{% else %}Stranger{% endif %}!</h1>
+            <input type="text" v-model="name" placeholder="你的名字">
+            <button @click="Hasname">有名字</button>
+            <button @click="addname">添加名字</button>
+            <button @click="delname">删除名字</button>
+            <button @click="listname">人们</button>
+            <h1 class="axio" >{{hasname}}</h1>
+            <h1 class="axio" >{{static}}</h1>
+        </div>
+        
+        <div class="footer" align="center">
+            <p>test</p>
+        </div>
+    </div>
+
+</body>
+{% include 'script.html' %}
+
+</html>
