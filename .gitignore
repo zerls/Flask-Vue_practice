@@ -5,3 +5,8 @@ app/static/js/vue.js
 __pycache__
 *.sqlite
 node_modules
+ProtoType.ipynb
+vue
+.vscode
+.ipynb_checkpoints
+migrations

@@ -1,10 +1,11 @@
 # from werkzeug.security import generate_password_hash, check_password_hash
-from datetime import datetime
+from datetime import datetime,timedelta
 import hashlib
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_login import UserMixin, AnonymousUserMixin
+from flask import current_app
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from . import db
+
 class Permission:
     CREATE = 1
     DELETE =2
@@ -73,6 +74,8 @@ class User(db.Model):
     password_hash = db.Column(db.String(128))
     confirmed = db.Column(db.Boolean, default=False)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
+    token_time=db.Column(db.DateTime)
+    valid_time=db.Column(db.Integer)
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -92,30 +95,34 @@ class User(db.Model):
         return check_password_hash(self.password_hash, password)
 
     def generate_confirmation_token(self, expiration=3600):
-        s = Serializer('ha&rg%fhuk@riFg', expiration)
-        # s = Serializer(current_app.config['SECRET_KEY'], expiration)
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'confirm': self.id}).decode('utf-8')
 
     def confirm(self, token):
-        s = Serializer('ha&rg%fhuk@riFg')
-        # s = Serializer(current_app.config['SECRET_KEY'])
+        s = Serializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token.encode('utf-8'))
         except:
             return False
-        if data.get('confirm') != self.id:
+        if data.get('confirm') != self.id :
             return False
         self.confirmed = True
         db.session.add(self)
         return True
+    
+    def token_vaild(self):
+        t=self.token_time+timedelta(seconds=self.valid_time)
+        if t < datetime.today():
+            return False
+        return True
 
     def generate_reset_token(self, expiration=3600):
-        s = Serializer('ha&rg%fhuk@riFg', expiration)
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'reset': self.id}).decode('utf-8')
 
     @staticmethod
     def reset_password(token, new_password):
-        s = Serializer('ha&rg%fhuk@riFg')
+        s = Serializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token.encode('utf-8'))
         except:
@@ -133,18 +140,13 @@ class User(db.Model):
     def is_administrator(self):
         return self.can(Permission.ADMIN)
 
-    def ping(self):
-        self.last_seen = datetime.utcnow()
-        db.session.add(self)
-
     def generate_auth_token(self, expiration):
-        s = Serializer(['ha&rg%fhuk@riFg'],
-                       expires_in=expiration)
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'id': self.id}).decode('utf-8')
 
     @staticmethod
     def verify_auth_token(token):
-        s = Serializer(['ha&rg%fhuk@riFg'])
+        s = Serializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token)
         except:
@@ -153,6 +155,9 @@ class User(db.Model):
 
     def __repr__(self):
         return '<User %r>' % self.username
+
+    def info(self):
+        return 'User: %(n)r password: %(m)r  id:%(u)r' %{'n':self.username,'m':self.password_hash,'u':self.id}
 
 
 class Place(db.Model):
@@ -178,6 +183,9 @@ class Place(db.Model):
 
     def __repr__(self):
         return '<Place %r>' % self.name
+
+    def info(self):
+        return 'Place: %(n)r id: %(t)r site: (%(m)r %(u)r)' %{'n':self.name,'m':self.x,'u':self.y,'t':self.id}
 
 
 class Data_type(db.Model):
@@ -211,7 +219,11 @@ class Collector(db.Model):
     name = db.Column(db.String(64), unique=True)
     collector_type = db.Column(db.String(64), unique=False)
     state_describe = db.Column(db.String(64), unique=False)
+    confirmed = db.Column(db.Boolean, default=False)
     run_time = db.Column(db.DateTime)
+    survive_time=db.Column(db.DateTime)
+    valid_time=db.Column(db.Integer)
+    token=db.Column(db.String(128), unique=False)
 
     place_id = db.Column(db.Integer, db.ForeignKey('places.id')) 
     state_id = db.Column(db.Integer, db.ForeignKey('collect_states.id')) 
@@ -220,6 +232,9 @@ class Collector(db.Model):
 
     def __init__(self, **kwargs):
         super(Collector, self).__init__(**kwargs)
+        sha = hashlib.sha256()
+        sha.update((current_app.config['SECRET_KEY']+self.name+datetime.today().strftime('%y%m%d%H%M')).encode())
+        self.token=sha.hexdigest()
 
     #TODO
 
@@ -246,5 +261,3 @@ class Data(db.Model):
 
     def __repr__(self):
         return '<Data %r>' % self.content
-
-

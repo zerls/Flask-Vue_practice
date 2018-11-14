@@ -3,7 +3,11 @@ var app = new Vue({
     data: {
         name:'john',
         hasname:'NoKnow',
-        static:""
+        static:"",
+        places:"",
+        place_static:"",
+        place:""
+
     },
     computed:{
 
@@ -37,5 +41,28 @@ var app = new Vue({
                     this.static = response.data.static
                 }.bind(this))
         },
+        listUser_info: function () {
+            axios.post('/api/v0/listUserInfo', {name:this.name
+                })
+                .then(function (response) {
+                    this.static = response.data.static
+                }.bind(this))
+        },
+        Place_info:function () {
+            axios.post('/api/v0/Place_info', {place:this.place
+                })
+                .then(function (response) {
+                    this.place_static = response.data.static
+                }.bind(this))
+        },
+        listPlace:function () {
+            axios.post('/api/v0/listPlace', {place:this.place})
+                .then(function (response) {
+                    this.places = response.data.static
+                }.bind(this))
+        },
     }
 });
+
+
+// listPlace

@@ -19,10 +19,17 @@
             <button @click="addname">添加名字</button>
             <button @click="delname">删除名字</button>
             <button @click="listname">人们</button>
-            <h1 class="axio" >{{hasname}}</h1>
-            <h1 class="axio" >{{static}}</h1>
+            <button @click="listUser_info">用户信息</button>
+            <h1 class="axio">{{hasname}}</h1>
+            <h1 class="axio">{{static}}</h1>
+            <h1 class="c">Place</h1>
+            <input type="text" v-model=" place" placeholder="地点">
+            <button @click="listPlace">地点列表</button>
+            <button @click="Place_info">地点信息</button>
+            <h1 class="axio">{{places}}</h1>
+            <h1 class="axio">{{place_static}}</h1>
         </div>
-        
+
         <div class="footer" align="center">
             <p>test</p>
         </div>
