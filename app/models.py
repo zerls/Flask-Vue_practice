@@ -74,8 +74,6 @@ class User(db.Model):
     password_hash = db.Column(db.String(128))
     confirmed = db.Column(db.Boolean, default=False)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id'))
-    token_time=db.Column(db.DateTime)
-    valid_time=db.Column(db.Integer)
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -120,19 +118,19 @@ class User(db.Model):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)
         return s.dumps({'reset': self.id}).decode('utf-8')
 
-    @staticmethod
-    def reset_password(token, new_password):
-        s = Serializer(current_app.config['SECRET_KEY'])
-        try:
-            data = s.loads(token.encode('utf-8'))
-        except:
-            return False
-        user = User.query.get(data.get('reset'))
-        if user is None:
-            return False
-        user.password = new_password
-        db.session.add(user)
-        return True
+    # @staticmethod
+    # def reset_password(token, new_password):
+    #     s = Serializer(current_app.config['SECRET_KEY'])
+    #     try:
+    #         data = s.loads(token.encode('utf-8'))
+    #     except:
+    #         return False
+    #     user = User.query.get(data.get('reset'))
+    #     if user is None:
+    #         return False
+    #     user.password = new_password
+    #     db.session.add(user)
+    #     return True
 
     def can(self, perm):
         return self.role is not None and self.role.has_permission(perm)
@@ -188,17 +186,6 @@ class Place(db.Model):
         return 'Place: %(n)r id: %(t)r site: (%(m)r %(u)r)' %{'n':self.name,'m':self.x,'u':self.y,'t':self.id}
 
 
-class Data_type(db.Model):
-    __tablename__ = 'data_types'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True)
-    datas = db.relationship('Data', backref='data_type', lazy='dynamic')
-
-    def __init__(self, **kwargs):
-        super(Data_type, self).__init__(**kwargs)
-
-    def __repr__(self):
-        return '<Data_type %r>' % self.name
 
 class Collect_state(db.Model):
     __tablename__ = 'collect_states'
@@ -212,22 +199,29 @@ class Collect_state(db.Model):
     def __repr__(self):
         return '<Collect_state %r>' % self.name
 
+class Collect_type(db.Model):
+    __tablename__ = 'collect_types'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True)
+    collectors = db.relationship('Collector', backref='collector_type', lazy='dynamic')
+
+    def __init__(self, **kwargs):
+        super(Collect_type, self).__init__(**kwargs)
+
+    def __repr__(self):
+        return '<Collect_type %r>' % self.name
 
 class Collector(db.Model):
     __tablename__ = 'collectors'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
-    collector_type = db.Column(db.String(64), unique=False)
-    state_describe = db.Column(db.String(64), unique=False)
     confirmed = db.Column(db.Boolean, default=False)
     run_time = db.Column(db.DateTime)
-    survive_time=db.Column(db.DateTime)
-    valid_time=db.Column(db.Integer)
     token=db.Column(db.String(128), unique=False)
 
     place_id = db.Column(db.Integer, db.ForeignKey('places.id')) 
     state_id = db.Column(db.Integer, db.ForeignKey('collect_states.id')) 
-
+    type_id = db.Column(db.Integer, db.ForeignKey('collect_types.id')) 
     datas = db.relationship('Data', backref='data_collector', lazy='dynamic')
 
     def __init__(self, **kwargs):
@@ -236,11 +230,37 @@ class Collector(db.Model):
         sha.update((current_app.config['SECRET_KEY']+self.name+datetime.today().strftime('%y%m%d%H%M')).encode())
         self.token=sha.hexdigest()
 
-    #TODO
+    def generate_auth_token(self, expiration):
+        s = Serializer(current_app.config['SECRET_KEY'], expiration)
+        return s.dumps({'id': self.id,'type':self.collector_type}).decode('utf-8')
 
+    @staticmethod
+    def verify_auth_token(token):
+        s = Serializer(current_app.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except:
+            return None
+        return Collector.query.get(data['id'])
+
+    def verify_token(self,token):
+        return token == self.token
+        
     def __repr__(self):
         return '<Collector %r>' % self.name
 
+class Data_type(db.Model):
+    __tablename__ = 'data_types'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True)
+    storage_type=db.Column(db.Boolean,default=False) #True-> Url Flase->Str
+    datas = db.relationship('Data', backref='data_type', lazy='dynamic')
+
+    def __init__(self, **kwargs):
+        super(Data_type, self).__init__(**kwargs)
+
+    def __repr__(self):
+        return '<Data_type %r>' % self.name
 
 class Data(db.Model):
     __tablename__ = 'datas'
@@ -248,7 +268,7 @@ class Data(db.Model):
     collector_type = db.Column(db.String(64), unique=False)
     content = db.Column(db.Text(128), unique=False)
     time = db.Column(db.DateTime)
-    is_collect = db.Column(db.Boolean)
+    is_collect = db.Column(db.Boolean,default=False)
 
     place_id = db.Column(db.Integer, db.ForeignKey('places.id')) 
     data_type_id = db.Column(db.Integer, db.ForeignKey('data_types.id'))
@@ -256,8 +276,8 @@ class Data(db.Model):
 
     def __init__(self, **kwargs):
         super(Data, self).__init__(**kwargs)
-        if self.is_collect == None:
-            self.is_collect = False
+        if self.time is None:
+            time=datetime.today()
 
     def __repr__(self):
         return '<Data %r>' % self.content

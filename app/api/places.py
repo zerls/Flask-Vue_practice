@@ -86,7 +86,7 @@ def place_find():
             p = Place.query.filter_by(name=place).first()
             data=[{"name":p.name,"x":p.x,"y":p.y}]
         else:
-            code,msg = 403,"参数错误"
+            code,msg,data = 403,"参数错误",[]
         
     except :
         code,msg,data = 404,"无数据",[]

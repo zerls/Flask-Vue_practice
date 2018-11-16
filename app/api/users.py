@@ -16,12 +16,10 @@ def login():
         user = User.query.filter_by(username=username).first()
         # if user is not None and user.confirmed==False and user.verify_password(password):
         if user is not None and user.verify_password(password):
-            user.valid_time = refresh_time = 3600
+            refresh_time = 3600
             access_time = 600
             refresh_token = user.generate_auth_token(expiration=refresh_time)
             access_token = user.generate_auth_token(expiration=access_time)
-            user.token_time = datetime.today()
-
             msg = ""
             code = 200
 
@@ -107,6 +105,25 @@ def user_premiss():
 
 # //用户信息修改
 # /api/version/user/{int:user.id} [PATCH]
+@api.route('/user',methods=['PATCH'])
+@admin_verify
+def pat_user():
+    try:
+        json = request.json
+        name=json['update']['name']
+        user = User.query.filter_by(id=json['id']).first()
+        if name: 
+            user.name=name
+            db.session.add(user)
+            db.session.commit()
+            code, msg = 200, 'OK'
+        else:
+            code, msg = 403, '无效提交'
+    except:
+        db.session.rollback()
+        code, msg = 404, "修改失败"
+    return jsonify({"code": code,
+                    "msg": msg})
 
 # //用户查找
 # /api/version/user [GET]
