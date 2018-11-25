@@ -1,5 +1,5 @@
-class UserError(BaseException):
+class UserError(Exception):
     pass
 
-class CollectError(BaseException):
+class CollectError(Exception):
     pass

@@ -72,7 +72,7 @@ def get_data():
         limit= request.args.get('limit')
         if not offset: offset=0
         if limit:
-            ps = Place.query.offset(offset).limit(limit)
+            ps = Data.query.offset(offset).limit(limit)
             data=[]
             for p in ps:
                 da={"name":p.name,"x":p.x,"y":p.y}

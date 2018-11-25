@@ -6,48 +6,31 @@ import random
 from datetime import datetime
 from .utils import admin_verify, user_verify
 
+@api.route('/user/action/token',methods=['GET'])
+@user_verify
+def user_token():
+    return jsonify({"code": 200,
+                    "msg": 'OK'})
 
 @api.route('/user/action/login', methods=['POST'])
 def login():
-    code, refresh_token, access_token, refresh_time, access_time, msg = 401, "", "", 0, 0, "登录失败"
+    
+    code,token, access_time, msg = 401,  "",  0, "用户名或密码错误"
     if request.json:
         username = request.json["username"]
         password = request.json["password"]
         user = User.query.filter_by(username=username).first()
         # if user is not None and user.confirmed==False and user.verify_password(password):
         if user is not None and user.verify_password(password):
-            refresh_time = 3600
-            access_time = 600
-            refresh_token = user.generate_auth_token(expiration=refresh_time)
+            access_time = 3600
             access_token = user.generate_auth_token(expiration=access_time)
-            msg = ""
-            code = 200
-
+            code,msg = 200,"OK"
     return jsonify({"code": code,
-                    "refresh_token": refresh_token,
-                    "access_token": access_token,
-                    "refresh_token_time": refresh_time,
+                    "token": token,
                     "access_token_time": access_time,
                     "msg": msg})
 
 
-# @api.route('/user/action/logout', methods=['GET'])
-# def logout():
-#     code, msg = 404, "无数据"
-#     token=request.args.get('token')
-#     if token:
-# #     if request.json:
-#         # token = request.json["token"]
-#         user = User.verify_auth_token(token)
-#         if user is not None:
-#             user.confirmed = False
-#             db.session.add(user)
-#             db.session.commit()
-#             code = 200
-#             msg = '退出成功'
-
-#     return jsonify({"code": code,
-#                     "msg": msg})
 
 @api.route('/user/action/uptoken', methods=['GET'])
 def uptoken():
@@ -69,8 +52,8 @@ def uptoken():
 
 # //用户密码修改
 # /api/version/user/action/password?token=_ [PATCH]
-@admin_verify
 @api.route('/user/action/password', methods=['PATCH'])
+@admin_verify
 def password():
     try:
         user_id = request.json["user_id"]

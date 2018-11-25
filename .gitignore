@@ -10,3 +10,13 @@ vue
 .vscode
 .ipynb_checkpoints
 migrations
+app/static/js/app.*.js.map
+app/static/fonts/element-icons.*.ttf
+app/static/js/about.*.js
+app/static/font/element-icons.*.ttf
+app/static/font/element-icons.*.woff
+app/static/js/about.*.js.map
+app/static/js/app.*.js
+app/static/js/chunk-vendors.*.js.map
+app/static/fonts/element-icons.*.woff
+app/static/js/chunk-vendors.*.js
