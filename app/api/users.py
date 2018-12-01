@@ -15,20 +15,25 @@ def user_token():
 @api.route('/user/action/login', methods=['POST'])
 def login():
     
-    code,token, access_time, msg = 401,  "",  0, "用户名或密码错误"
+    code,token, access_time, msg = 401,  "",  0, "账号或密码错误"
     if request.json:
         username = request.json["username"]
         password = request.json["password"]
+        print(username=="")
+        print(password=="")
+        if username == "" or password == "":
+            msg="账号或密码不能为空"    
         user = User.query.filter_by(username=username).first()
         # if user is not None and user.confirmed==False and user.verify_password(password):
         if user is not None and user.verify_password(password):
             access_time = 3600
-            access_token = user.generate_auth_token(expiration=access_time)
+            token = user.generate_auth_token(expiration=access_time)
             code,msg = 200,"OK"
+
     return jsonify({"code": code,
                     "token": token,
                     "access_token_time": access_time,
-                    "msg": msg})
+                    "msg": msg}),code
 
 
 

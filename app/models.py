@@ -265,10 +265,9 @@ class Data_type(db.Model):
 class Data(db.Model):
     __tablename__ = 'datas'
     id = db.Column(db.Integer, primary_key=True)
-    collector_type = db.Column(db.String(64), unique=False)
     content = db.Column(db.Text(128), unique=False)
     time = db.Column(db.DateTime)
-    is_collect = db.Column(db.Boolean,default=False)
+    is_collect = db.Column(db.Boolean,default=True)
 
     place_id = db.Column(db.Integer, db.ForeignKey('places.id')) 
     data_type_id = db.Column(db.Integer, db.ForeignKey('data_types.id'))
@@ -277,7 +276,7 @@ class Data(db.Model):
     def __init__(self, **kwargs):
         super(Data, self).__init__(**kwargs)
         if self.time is None:
-            time=datetime.today()
+            self.time=datetime.today()
 
     def __repr__(self):
         return '<Data %r>' % self.content

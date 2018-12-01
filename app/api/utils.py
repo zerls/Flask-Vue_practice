@@ -15,6 +15,7 @@ def admin_verify(func):
                     return    func(*args,**kwargs)
                 raise UserError('admin verify false')
             except Exception as e:
+                print("ERROR: "+e.__str__())
                 return jsonify({"code": 401,
                         "msg": "auto verift false"})     
         wrapper.__name__ = func.__name__      
