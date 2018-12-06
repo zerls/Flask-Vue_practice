@@ -16,6 +16,8 @@ def user_token():
 def login():
     
     code,token, access_time, msg = 401,  "",  0, "账号或密码错误"
+    data=request.get_data()
+    print(data)
     if request.json:
         username = request.json["username"]
         password = request.json["password"]
@@ -164,7 +166,6 @@ def delete():
 
 # //用户添加
 # /api/version/user [POST]
-
 @api.route('/user', methods=['POST'])
 @admin_verify
 def add_user():

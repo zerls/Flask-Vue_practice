@@ -1,4 +1,79 @@
-var app = new Vue({
+Vue.component('ppoint', {
+    data: function () {
+      return {
+        count: 0,
+        sty:{position:'absolute', 
+            left:this.x*100-16+'px',top:this.y*100-36+'px',cursor:'pointer',color:'white'}
+      }
+   
+    },
+    props:[
+        'msg',
+        'x',
+        'y',
+      ],
+    template: '<div  :style="sty" >\
+    <div style="position:absolute; \
+    width: 30px;\
+    height: 30px;\
+    border-radius: 50%;\
+    background: rgb(0, 0, 0,0.8);\
+    box-shadow: rgba(128, 128, 128, 0.05) 0px 4px 15px;\
+    border-bottom-left-radius: 0;\
+    transform: rotate(-45deg);"></div>\
+    <span align="center" style="position:absolute; left:10px;top:4px;"\
+    >{{ msg }}</span>\
+    </div>',
+  })
+
+var app1= new Vue({
+    el: '#can',
+    data: {
+        placelist: [
+            {
+              "id": 1, 
+              "name": "p1", 
+              "x": 1.0, 
+              "y": 2.0
+            }, 
+            {
+              "id": 2, 
+              "name": "p2", 
+              "x": 2.0, 
+              "y": 2.0
+            }, 
+            {
+              "id": 3, 
+              "name": "p3", 
+              "x": 3.0, 
+              "y": 1.0
+            }, 
+            {
+              "id": 4, 
+              "name": "p4", 
+              "x": 2.0, 
+              "y": 1.0
+            }, 
+            {
+              "id": 5, 
+              "name": "p5", 
+              "x": 5.0, 
+              "y": 1.0
+            }
+          ]
+
+    },
+    computed:{
+
+    },
+    methods:{
+        tripe(name){
+            console.log("log:"+name)
+            // alert(name)
+        }
+    }
+})
+  var app = new Vue({
     el: '#app',
     data: {
         name:'john',
@@ -6,7 +81,7 @@ var app = new Vue({
         static:"",
         places:"",
         place_static:"",
-        place:""
+        place:"",
 
     },
     computed:{
@@ -63,6 +138,7 @@ var app = new Vue({
         },
     }
 });
+
 
 
 // listPlace

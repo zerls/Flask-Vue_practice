@@ -13,9 +13,9 @@ def s_token():
     code, token, token_time, msg = 401, "",  0, "登录失败"
     if request.json:
         name = request.json["name"]
-        token = request.json["token"]
+        tokenn = request.json["token"]
         col = Collector.query.filter_by(name=name).first()
-        if col is not None and col.verify_token(token):
+        if col is not None and col.verify_token(tokenn):
             token_time = 36000
             token = col.generate_auth_token(expiration=token_time)
             msg = ""

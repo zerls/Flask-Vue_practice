@@ -232,7 +232,7 @@ class Collector(db.Model):
 
     def generate_auth_token(self, expiration):
         s = Serializer(current_app.config['SECRET_KEY'], expiration)
-        return s.dumps({'id': self.id,'type':self.collector_type}).decode('utf-8')
+        return s.dumps({'id': self.id,'type':self.collector_type.name}).decode('utf-8')
 
     @staticmethod
     def verify_auth_token(token):

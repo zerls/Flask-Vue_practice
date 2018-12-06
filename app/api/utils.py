@@ -33,6 +33,7 @@ def user_verify(func):
                     return    func(*args,**kwargs)
             raise UserError('user verify false')
         except Exception as e:
+            print("ERROR: "+e.__str__())
             return jsonify({"code": 401,
                     "msg": "auto verift false"})     
     wrapper.__name__ = func.__name__ 
@@ -41,13 +42,15 @@ def user_verify(func):
 def sensor_verify(func):
     def wrapper(*args, **kwargs):
         try:       
-            token=request.args.get('token')
+            token=request.headers.get('Authorization')
+            print("设备型号："+request.headers.get('User-Agent'))
             if token:
                 col = Collector.verify_auth_token(token)
                 if col is not None:
                     return    func(col,*args,**kwargs)
             raise CollectError('Collector verify false')
         except Exception as e:
+            print("ERROR: "+e.__str__())
             return jsonify({"code": 401,
                     "msg": "auto verift false"})     
     wrapper.__name__ = func.__name__ 
