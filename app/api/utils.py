@@ -1,4 +1,5 @@
 from ..models import User, Role,Collector
+
 from flask import request,jsonify
 from .errors import UserError,CollectError
 import re
@@ -16,6 +17,7 @@ def admin_verify(func):
                 raise UserError('admin verify false')
             except Exception as e:
                 print("ERROR: "+e.__str__())
+                raise e
                 return jsonify({"code": 401,
                         "msg": "auto verift false"})     
         wrapper.__name__ = func.__name__      

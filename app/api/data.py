@@ -2,12 +2,13 @@ from datetime import datetime, timedelta
 import urllib
 import time
 from flask import current_app, jsonify, request, url_for
-
+from datetime import datetime, timedelta
 from . import api
-from .. import db
-from ..models import Place, Data, Data_type
+from .. import db, rredis
+from ..models import Place, Data, Data_type,Collector
+from ..utils import Redis
 from .utils import admin_verify, user_verify, sensor_verify
-
+import cmath
 # //设备采集数据 添加
 # /api/version/data [POST]
 
@@ -15,61 +16,89 @@ from .utils import admin_verify, user_verify, sensor_verify
 @api.route('/data', methods=['POST'])
 @sensor_verify
 def add_data(col):
+
     try:
         json = request.json
         place = Place.query.filter_by(name=json['data']['place']).first()
-        type = Data_type.query.filter_by(name=json['data']['type']).first()
+        types_ = Data_type.query.filter_by(name=json['data']['type']).first()
         content = json['data']['content']
-        d = Data(content=content, data_type=type,
-                 data_place=place, data_collector=col)
-        db.session.add(d)
+        # d = Data(content=content, data_type=types_,
+        #          data_place=place, data_collector=col,time=datetime.today())
+        strkey = str(json['data']['place'])+"::"+str(json['data']['type'])
+        val={"data": content, "time": datetime.today(), "data_collector": col.id}
+        Redis.zadd(rredis, strkey, val);
+        col.run_time=datetime.today()
+        col.isonline=True
+
+        db.session.add(col)
+        # db.session.add(d)
+
+
+        strkey=str(json['data']['place'])+"::"+str(json['data']['type']) 
+        data_l=Redis.zrange(rredis,strkey,0,10) 
+        # if(rredis.zcard(strkey) >= 50):
+        if(rredis.zcard(strkey) >= 5):
+            data = data_l[rredis.zcard(strkey)-1]
+            content=data['data']
+            place = Place.query.filter_by(name=json['data']['place']).first()
+            types_ = Data_type.query.filter_by(name=json['data']['type']).first()
+            col = Collector.query.filter_by(id=data['data_collector']).first()
+            print((data['time']))
+            d_ = Data(content=content, data_type=types_,data_place=place, data_collector=col,time=data['time'])
+            db.session.add(d_)
+            rredis.delete(strkey)
+            print("redis::OK",strkey)
+
+
         db.session.commit()
-        print(1)
-        code, msg = 200, 'OK'
+
+
+
+        code, msg=200, 'OK'
     # TODO png
     except Exception as e:
         print("ERROR: "+e.__str__())
         db.session.rollback()
-        code, msg = 403, "添加失败"
+        code, msg=403, "添加失败"
     return jsonify({"code": code,
                     "msg": msg})
 
 
 # //数据删除
 # /api/version/data?token=_ [DELETE]
-@api.route('/data', methods=['DELETE'])
+@api.route('/data', methods = ['DELETE'])
 # @admin_verify
 def del_data():
     try:
-        code, msg = 200, 'OK'
-        place = request.json['place']
-        types = request.json['type']
-        time_start = request.json['time_start']
-        time_slice = request.json['time_slice']
-        data_id = request.json['id']
-        place = Place.query.filter_by(name=place).first()
-        types = Data_type.query.filter_by(name=types).first()
+        code, msg=200, 'OK'
+        place=request.json['place']
+        types=request.json['type']
+        time_start=request.json['time_start']
+        time_slice=request.json['time_slice']
+        data_id=request.json['id']
+        place=Place.query.filter_by(name = place).first()
+        types=Data_type.query.filter_by(name = types).first()
         if data_id is not "":
-            d = Data.query.filter_by(id=data_id).first()
+            d=Data.query.filter_by(id = data_id).first()
             db.session.delete(d)
             db.session.commit()
         elif time_start and place:
             if time_slice is None:
-                time_slice = 1
-            time = datetime.fromtimestamp(int(time_start))
+                time_slice=1
+            time=datetime.fromtimestamp(int(time_start))
             # d = db.session.query(Data).filter(Data.time.between(time, time+timedelta(seconds=int(time_slice))),
             # data_place=place, data_type=types)
-            ds = db.session.query(Data).filter(Data.time.between(
+            ds=db.session.query(Data).filter(Data.time.between(
                 time, time+timedelta(seconds=int(time_slice))))
             for d in ds:
                 db.session.delete(d)
             db.session.commit()
         else:
-            code, msg = 403, "参数错误"
+            code, msg=403, "参数错误"
     except Exception as e:
         print("ERROR: "+e.__str__())
         db.session.rollback()
-        code, msg = 404, "无数据"
+        code, msg=404, "无数据"
     return jsonify({"code": code,
                     "msg": msg})
 
@@ -77,25 +106,25 @@ def del_data():
 # TODO
 # //采集数据类型列表
 # /api/version/data [GET]  data/type/list
-@api.route('/data', methods=['POST'])
+@api.route('/data', methods = ['POST'])
 # @user_verify
 def get_datatype(col):
     try:
-        json = request.json
-        place = Place.query.filter_by(name=json['data']['place']).first()
-        type = Data_type.query.filter_by(name=json['data']['type']).first()
-        content = json['data']['content']
-        d = Data(content=content, data_type=type,
-                 data_place=place, data_collector=col)
+        json=request.json
+        place=Place.query.filter_by(name = json['data']['place']).first()
+        type=Data_type.query.filter_by(name = json['data']['type']).first()
+        content=json['data']['content']
+        d=Data(content = content, data_type = type,
+                 data_place = place, data_collector = col)
         db.session.add(d)
         db.session.commit()
         print(1)
-        code, msg = 200, 'OK'
+        code, msg=200, 'OK'
     # TODO png
     except Exception as e:
         print("ERROR: "+e.__str__())
         db.session.rollback()
-        code, msg = 403, "添加失败"
+        code, msg=403, "添加失败"
     return jsonify({"code": code,
                     "msg": msg})
 
@@ -103,35 +132,38 @@ def get_datatype(col):
 # TODO
 # //历史数据获取
 # /api/version/data [GET]  data/type/list
-@api.route('/data/action/history', methods=['POST'])
+@api.route('/data/action/history', methods = ['POST'])
 # @user_verify
 def get_dataHis():
     try:
-        json = request.json
+        json=request.json
         print(request.data)
-        place = json['place']
-        types = json['type']
+        place=json['place']
+        types=json['type']
         time_start=int(json['sdate'])/1000
         time_slice=int(json['edate'])/1000-time_start
 
-        place = urllib.parse.unquote(place)
-        types = urllib.parse.unquote(types)
-        p = Place.query.filter_by(name=place).first()
-        t = Data_type.query.filter_by(name=types).first()
+        place=urllib.parse.unquote(place)
+        types=urllib.parse.unquote(types)
+        p=Place.query.filter_by(name = place).first()
+        t=Data_type.query.filter_by(name = types).first()
         if p and t:
-            time_ = datetime.fromtimestamp(int(time_start))
+            time_=datetime.fromtimestamp(int(time_start))
 
-            ds = db.session.query(Data).filter(Data.time.between(
-                time_, time_+timedelta(seconds=int(time_slice)))).filter_by(data_place=p, data_type=t).order_by(
+            ds=db.session.query(Data).filter(Data.time.between(
+                time_, time_+timedelta(seconds=int(time_slice)))).filter_by(data_place = p, data_type = t).order_by(
                 Data.id).all()
             data = []
+            
             for d in ds:
                 data.append(
-                    {"data": d.content, "time": time.mktime(d.time.timetuple())})
+                    {"data": round(float(d.content), 2), "time": time.mktime(d.time.timetuple())})
             code, msg = 200, 'OK'
             print(data)
         else:
             code, msg, data, times = 404, "无数据", [], ''
+        if data==[]:
+            code, msg, data, times = 405, "无数据", [], ''
     except Exception as e:
         print("ERROR: "+e.__str__())
         code, msg, data, times = 403, "参数错误", [], ''
@@ -140,6 +172,25 @@ def get_dataHis():
                     "msg": msg,
                     "data": data,
                     })
+
+
+
+# TODO
+# //历史数据获取
+# /api/version/data [GET]  data/type/list
+@api.route('/data/type/list', methods=['GET'])
+# @user_verify
+def get_datatype_list():
+    code,msg =200,"OK"
+    data=[]
+    d=Data_type.query.all()
+    for ds in d:
+        data.append(ds.name);
+    return jsonify({"code": code,
+                    "msg": msg,
+                    "data": data,
+                    })
+
 
 # sdate: 1547395200000
 # edate: 1548691200000
@@ -152,24 +203,36 @@ def get_dataHis():
 def last_data():
     try:
         place = request.args.get('place')
-        types = request.args.get('type')
+        # types = request.args.get('type')
         sdate = request.args.get('sdate')
         edate = request.args.get('edate')
-        place = urllib.parse.unquote(place)
-        types = urllib.parse.unquote(types)
-        p = Place.query.filter_by(name=place).first()
-        t = Data_type.query.filter_by(name=types).first()
-        if p and t:
-            d = Data.query.filter_by(data_place=p, data_type=t).order_by(
-                Data.id.desc()).first()
-            code, msg, data, times = 200, 'OK', d.content, time.mktime(
-                d.time.timetuple())
+        # place = urllib.parse.unquote(place)
+        # types = urllib.parse.unquote(types)
+        # p = Place.query.filter_by(name=place).first()
+        t = Data_type.query.all()
+        data=[]
+        nisnew=True
+        for ts in t:
+            data_=[]
+            strkey=str(place)+"::"+str(ts.name) 
+            data_l=Redis.zrange(rredis,strkey,0,50) 
+            len_=rredis.zcard(strkey)
+            if(len_!=0):
+                nisnew=False
+                na = data_l[len_-1]
+                # d = Data.query.filter_by(data_place=p, data_type=ts).order_by(Data.id.desc()).first()
+                code, msg, data_, times = 200, 'OK', na['data'], time.mktime(na['time'].timetuple())
+                data.append(data_)
             print(data)
-        else:
+        if data_==[]:
             code, msg, data, times = 404, "无数据", [], ''
+        
+        if  nisnew or time.mktime(na['time'].timetuple()) < (time.time()-60):
+            data,msg,code=[],"无新数据",405
+            print(msg,code)
     except Exception as e:
         print("ERROR: "+e.__str__())
-        code, msg, data, times = 403, "参数错误", [], ''
+        code, msg, data, times = 405, "无数据", [], ''
 
     return jsonify({"code": code,
                     "msg": msg,

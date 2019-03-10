@@ -218,7 +218,7 @@ class Collector(db.Model):
     confirmed = db.Column(db.Boolean, default=False)
     run_time = db.Column(db.DateTime)
     token=db.Column(db.String(128), unique=False)
-
+    isonline = db.Column(db.Boolean, unique=False)
     place_id = db.Column(db.Integer, db.ForeignKey('places.id')) 
     state_id = db.Column(db.Integer, db.ForeignKey('collect_states.id')) 
     type_id = db.Column(db.Integer, db.ForeignKey('collect_types.id')) 
@@ -276,6 +276,7 @@ class Data(db.Model):
     def __init__(self, **kwargs):
         super(Data, self).__init__(**kwargs)
         if self.time is None:
+            print("Model::Data.add_time")
             self.time=datetime.today()
 
     def __repr__(self):

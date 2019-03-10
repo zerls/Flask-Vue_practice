@@ -1,8 +1,16 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from config import config
+from flask_apscheduler import APScheduler
 
+from .utils import Redis
+
+rredis=Redis.connect()
+scheduler=APScheduler()
 db = SQLAlchemy()
+
+
+from .tasks import *
 
 def create_app(config_name):
     app = Flask(__name__)
@@ -11,7 +19,9 @@ def create_app(config_name):
 
     app.jinja_env.variable_start_string = "{{ "
     app.jinja_env.variable_end_string = " }}"
-
+    scheduler.init_app(app)
+    # scheduler.add_job(func=task1, id='1', trigger='interval', seconds=10, replace_existing=True)
+    scheduler.start()
     db.init_app(app)
 
     from .main import main as main_blueprint

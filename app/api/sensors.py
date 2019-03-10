@@ -55,7 +55,7 @@ def act_sensor(col):
                     "msg": msg})
 
 # //设备删除
-@api.route('/place', methods=['DELETE'])
+@api.route('/sensor', methods=['DELETE'])
 @admin_verify
 def del_sensor():
     try:
@@ -66,7 +66,7 @@ def del_sensor():
         code, msg = 200, 'OK'
     except:
         db.session.rollback()
-        code, msg = 404, "数据不存在"
+        code, msg = 403, "数据类型错误"
     return jsonify({"code": code,
                     "msg": msg})
 
@@ -102,18 +102,21 @@ def del_sensor():
 def add_sensor():
     try:
         json = request.json
-        type = Collect_type.query.filter_by(name=json['type']).first()
+        types = Collect_type.query.filter_by(name=json['type']).first()
         place = Place.query.filter_by(name=json['place']).first()
-        state = Collect_state.query.filter_by(id=json['state']).first()
-        if type and place and state:
-            col = Collector(name=json['name'], collector_type=type, collector_place=place,
+        state = Collect_state.query.filter_by(id=1).first()
+        if types and place:
+            col = Collector(name=json['name'], collector_type=types, collector_place=place,
                             collector_state=state)
+  
         db.session.add(col)
         db.session.commit()
         code, msg = 200, 'OK'
-    except:
+    except Exception as e: 
+        # raise e
+        print("Error "+": "+e.__str__())
         db.session.rollback()
-        code, msg = 404, "无数据"
+        code, msg = 403, "数据验证失败"
     return jsonify({"code": code,
                     "msg": msg})
 
@@ -126,9 +129,11 @@ def pat_sensor():
         json = request.json
         place = Place.query.filter_by(name=json['place']).first()
         col = Collector.query.filter_by(id=json['id']).first()
+        name=json['name']
         if place:
             col.collector_place = place
-
+        if name:
+            col.name=name
         db.session.add(col)
         db.session.commit()
 
@@ -140,9 +145,9 @@ def pat_sensor():
     return jsonify({"code": code,
                     "msg": msg})
 
-    # //设备查找
-    # /api/version/sensor?token=_ [GET]
 
+# //设备查找
+# /api/version/sensor?token=_ [GET]
 @api.route('/sensor', methods=['GET'])
 @admin_verify
 def find_sensor():
@@ -176,19 +181,19 @@ def find_sensor():
             data = []
             for col in cols:
                 da = {"id": col.id, "name": col.name, "type": col.type,
-                      "place": col.place, "state": col.state, "run_time": col.run_time}
+                      "place": col.place, "state": col.state, "run_time": col.run_time,"isonline":col.isonline}
                 data.append(da)
 
         elif uid:
             col = Collector.query.filter_by(id=uid).first()
             data = [{"id": col.id, "name": col.name, "type": col.type,
-                     "place": col.place, "state": col.state, "run_time": col.run_time}]
+                     "place": col.place, "state": col.state, "run_time": col.run_time,"isonline":col.isonline}]
         elif limit:
             cols = Collector.query.offset(offset).limit(limit)
             data = []
             for col in cols:
                 da = {"id": col.id, "name": col.name, "type": col.collector_type.name,
-                      "place": col.collector_place.name, "state": col.collector_state.name, "run_time": col.run_time,"token":col.token}
+                      "place": col.collector_place.name, "state": col.collector_state.name, "run_time": col.run_time,"token":col.token,"isonline":col.isonline}
                 if da['run_time'] is None:
                     da['run_time']=""
                 print(da)
@@ -205,3 +210,20 @@ def find_sensor():
                     "msg": msg,
                     "data": data,
                     })
+
+
+@api.route('/sensor/type/action/list', methods=['GET'])
+@admin_verify
+def list_sensorType():
+    try:
+        ts=Collect_type.query.all()
+        data=[]
+        for t in ts:
+            data.append(t.name)
+        code, msg ,= 200, 'OK'
+    except:
+        db.session.rollback()
+        code, msg ,data = 404, "无数据",[]
+    return jsonify({"code": code,
+                    "msg": msg,
+                    "data":data})
