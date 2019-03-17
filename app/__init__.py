@@ -1,16 +1,19 @@
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from config import config
-from flask_apscheduler import APScheduler
 
+# init Redis db
 from .utils import Redis
-
 rredis=Redis.connect()
-scheduler=APScheduler()
+rredis.flushdb()
+
+# init SQL db
+from flask_sqlalchemy import SQLAlchemy
 db = SQLAlchemy()
 
-
+from flask_apscheduler import APScheduler
+scheduler=APScheduler()
 from .tasks import *
+
 
 def create_app(config_name):
     app = Flask(__name__)

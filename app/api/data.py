@@ -22,16 +22,17 @@ def add_data(col):
         place = Place.query.filter_by(name=json['data']['place']).first()
         types_ = Data_type.query.filter_by(name=json['data']['type']).first()
         content = json['data']['content']
-        # d = Data(content=content, data_type=types_,
-        #          data_place=place, data_collector=col,time=datetime.today())
         strkey = str(json['data']['place'])+"::"+str(json['data']['type'])
         val={"data": content, "time": datetime.today(), "data_collector": col.id}
         Redis.zadd(rredis, strkey, val);
-        col.run_time=datetime.today()
-        col.isonline=True
+        now_time=col.run_time=datetime.today()
 
+        if(col.isonline == False):
+            Redis.lpush(rredis,"info_list",{"place":json['data']['place'],"time":time.time(),"sensor":col.name,"info":"设备登录","code":200});
+        if(float(content) >100):
+            Redis.lpush(rredis,"info_list",{"place":json['data']['place'],"time":time.time(),"sensor":col.name,"info":"数据异常","code":404});
+        col.isonline=True
         db.session.add(col)
-        # db.session.add(d)
 
 
         strkey=str(json['data']['place'])+"::"+str(json['data']['type']) 
@@ -203,12 +204,8 @@ def get_datatype_list():
 def last_data():
     try:
         place = request.args.get('place')
-        # types = request.args.get('type')
         sdate = request.args.get('sdate')
         edate = request.args.get('edate')
-        # place = urllib.parse.unquote(place)
-        # types = urllib.parse.unquote(types)
-        # p = Place.query.filter_by(name=place).first()
         t = Data_type.query.all()
         data=[]
         nisnew=True
@@ -220,7 +217,6 @@ def last_data():
             if(len_!=0):
                 nisnew=False
                 na = data_l[len_-1]
-                # d = Data.query.filter_by(data_place=p, data_type=ts).order_by(Data.id.desc()).first()
                 code, msg, data_, times = 200, 'OK', na['data'], time.mktime(na['time'].timetuple())
                 data.append(data_)
             print(data)

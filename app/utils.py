@@ -1,6 +1,7 @@
 import redis,time,pickle
 from datetime import datetime, timedelta
 
+MAX_LIST=8
 class Redis:
     @staticmethod
     def connect(host='localhost', port=6379, db=0):
@@ -35,3 +36,21 @@ class Redis:
             dd=pickle.loads(da)
             datas.append(dd)
         return  datas
+
+    @staticmethod
+    def lpush(re,key,data):
+        if(data.get('time') != None):
+            data['time']=time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(data['time']))
+        re.lpush(key,pickle.dumps(data))
+        while re.llen(key) > MAX_LIST:
+            _=re.rpop(key) 
+
+    @staticmethod
+    def lrange(re,key,l,r):
+        datas=[]
+        data=re.lrange(key,l,r)
+        for da in data:
+            dd=pickle.loads(da)
+            datas.append(dd)
+        return  datas
+    
